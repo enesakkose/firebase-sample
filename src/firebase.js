@@ -1,9 +1,12 @@
 import { initializeApp } from "firebase/app";
+import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, query, where } from "firebase/firestore";
 import { getAnalytics } from "firebase/analytics";
 import { getAuth, createUserWithEmailAndPassword,signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile, sendEmailVerification, updatePassword } from 'firebase/auth'
 import toast from "react-hot-toast";
 import store from './store'
+import { setTodos } from "./store/todos";
 import { login as handleLogin, logout as handleLogout } from "./store/auth";
+import { setUserData } from "./utils";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_REACT_APP_API_KEY,
@@ -22,6 +25,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 export const auth = getAuth()
+export const db = getFirestore(app)
 
 export const register = async(email, password) => {
    try{
@@ -84,16 +88,42 @@ export const emailVerified = async() => {
 
 onAuthStateChanged(auth, (user) => {
   if(user) {
-    store.dispatch(handleLogin({
-      displayName: user.displayName,
-      email: user.email,
-      emailVerified: user.emailVerified,
-      photoURL: user.photoURL,
-      uid: user.uid
-    }))
+    setUserData()
+
+
+    onSnapshot(query(collection(db, 'todos'), where('uid', '==', auth.currentUser.uid)), (doc) => {
+      store.dispatch(
+        setTodos(doc.docs.reduce((todos, todo) => [...todos, {...todo.data(), id: todo.id}], []))
+      )
+  });
+
   } else {
     store.dispatch(handleLogout())
   }
 })
+
+export const addTodo = async(data) => {
+  try{
+    const result = await addDoc(collection(db, 'todos'), data)
+    return result.id
+ } catch(error) {
+  toast.error(error.message)
+ } 
+  
+  
+  
+}
+
+export const deleteTodo = async(id) => {
+  try{
+     await deleteDoc(doc(db, 'todos', id))
+  } catch(error) {
+    toast.error(error.message)
+  }
+  
+ 
+}
+
+
 
 export default app

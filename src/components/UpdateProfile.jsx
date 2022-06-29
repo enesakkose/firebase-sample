@@ -2,12 +2,12 @@ import React from 'react'
 import {useState} from 'react'
 import { update, auth, resetPassword } from '../firebase'
 import { useDispatch, useSelector } from 'react-redux'
-import { login } from '../store/auth'
+import { setUserData } from '../utils'
 
 function UpdateProfile() {
 
   const { user } = useSelector(state => state.auth)
-  const dispatch = useDispatch()  
+
   const [displayName, setDisplayName] = useState(user.displayName || '') 
   const [password, setPassword] = useState('')
   const [avatar, setAvatar] = useState(user.photoURL || '') 
@@ -18,13 +18,7 @@ function UpdateProfile() {
             displayName,
             photoURL: avatar
         })
-        dispatch(login({
-            displayName: auth.currentUser.displayName,
-            email: auth.currentUser.email,
-            emailVerified: auth.currentUser.emailVerified,
-            photoURL: auth.currentUser.photoURL,
-            uid: auth.currentUser.uid
-        }))
+        setUserData()
     }
 
     const handleResetSubmit = async(e) => {
